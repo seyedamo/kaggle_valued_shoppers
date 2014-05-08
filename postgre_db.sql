@@ -83,13 +83,20 @@ select count(distinct id) from raw.transactions;
 create schema model
 ;
 
-create table model.trans as (
+create table model.trans1 as (
 	select * from raw.transactions
 	where dept in (
 		select category/100 from raw.offer
 	)
-	and (id, chain) in (
+);
+
+create index idx_trans1_id_chain on model.trans1(id, chain);
+
+create table model.trans as (
+	select * from model.trans1
+	where (id, chain) in (
 		select id, chain from raw.trainHistory
 	)
 );
+
 
