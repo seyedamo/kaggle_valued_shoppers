@@ -99,4 +99,8 @@ create table model.trans as (
 	)
 );
 
+analyze model.trans;
+
+select count(1) from model.trans;
+--45,279,648
 
