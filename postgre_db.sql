@@ -78,3 +78,18 @@ create index idx_testHistory_id_chain on raw.testHistory(id, chain);
 select count(distinct id) from raw.transactions;
 --311,541
 
+
+-- Data reduction
+create schema model
+;
+
+create table model.trans as (
+	select * from raw.transactions
+	where dept in (
+		select category/100 from raw.offer
+	)
+	and (id, chain) in (
+		select id, chain from raw.trainHistory
+	)
+);
+
