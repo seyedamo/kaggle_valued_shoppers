@@ -61,6 +61,8 @@ create table raw.offer (
 copy raw.offer from 'C:\speed\offers.csv'
 with (format csv, header true);
 
+create index idx_offer_offer on raw.offer(offer);
+
 create table raw.testHistory (
 	id bigint,
 	chain int,
@@ -101,6 +103,62 @@ create table model.trans as (
 
 analyze model.trans;
 
+create index idx_model_trans_id_chain_dept on model.trans(id, chain, dept);
+
 select count(1) from model.trans;
 --45,279,648
 
+
+create table model.trainHist_with_offer as (
+	select 
+		h.*,
+		o.category/100 as offer_dept,
+		o.category as offer_category,
+		o.quantity as offer_quantity,
+		o.company as offer_company,
+		o.offervalue as offer_value,
+		o.brand as offer_brand
+	from raw.trainHistory h
+	inner join raw.offer o
+	on h.offer = o.offer
+);
+
+create index idx_model_trainHist_with_offer_id on model.trainHist_with_offer(id, chain, offer_dept);
+
+create table model.train as (
+	select 
+		t.*,
+		h.offer,
+		h.market,
+		h.repeattrips,
+		h.repeater,
+		h.offerdate,
+		h.offer_dept,
+		h.offer_category,
+		h.offer_quantity,
+		h.offer_company,
+		h.offer_brand,
+		h.offer_value,
+		h.offerdate - t.date as n_days_before
+	from model.trainHist_with_offer h
+	inner join model.trans t
+	on h.id = t.id
+	and h.chain = t.chain
+	and h.offer_dept = t.dept
+);
+
+
+select 
+	id, 
+	chain,
+	case when category = offer_category then 1
+		else 0 end has_bought_category,
+	case when company = offer_company then 1
+		else 0 end has_bought_company,
+	case when brand = offer_brand then 1
+		else 0 end has_bought_brand
+	
+from model.train
+where n_days_before <= 30
+and id = 86246
+;
